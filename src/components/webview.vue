@@ -1,5 +1,6 @@
-<script>
-export default {
+<script>   < script>
+import fs from 'fs'
+export default {   导出默认{
   name: 'HtmlView',
   props: {
     url: { type: String, required: true },
@@ -14,7 +15,7 @@ export default {
       loading: false,
       error: false,
       errorMsg: '',
-      baseUrl: '',
+      baseUrl: '',   ’’baseUrl:、
       currentUrl: this.url,
       cssRules: [],
       scripts: [],
@@ -31,7 +32,7 @@ export default {
       return str.indexOf(prefix) === 0
     },
     _replaceHttps(url) {
-      return url.replace('https://', 'http://')
+      return url.replace('https://', 'http://')返回的url。替换(' https:// ', ' http:// ')
     },
     resolveUrl(src, base) {
       if (!src || !base) return src
@@ -67,8 +68,28 @@ export default {
           'Accept-Language': 'zh-CN,zh;q=0.8,en;q=0.6'
         };
 
-        let resp = await this._doRequest(http, reqUrl, headers);
-        let html = this._extractHtml(resp);
+        let html = '';
+        // 本地文件路径识别（file:// 或无协议前缀，不以 http 开头）
+        if (this._startsWith(reqUrl, 'file://') || !this._startsWith(reqUrl, 'http')) {
+          let filePath = reqUrl;
+          if (this._startsWith(filePath, 'file://')) {
+            filePath = filePath.substring(7); // 去掉 'file://'
+          }
+          try {
+            html = await fs.readFile(filePath);
+          } catch (e) {
+            throw new Error('本地文件读取失败: ' + e.message);
+          }
+        } else {
+          // 原有 HTTP 请求逻辑
+          let resp = await this._doRequest(http, reqUrl, headers);
+          html = this._extractHtml(resp);
+          if (!html && this._startsWith(reqUrl, 'https://')) {
+            reqUrl = this._replaceHttps(reqUrl);
+            resp = await this._doRequest(http, reqUrl, headers);
+            html = this._extractHtml(resp);
+          }
+        }
 
         if (!html && this._startsWith(reqUrl, 'https://')) {
           reqUrl = this._replaceHttps(reqUrl);
@@ -695,85 +716,85 @@ export default {
         navigator: undefined, location: undefined
       };
 
-      extendTree(this.nodeTree);
+      extendTree(this   这.nodeTree);
 
-      for (let script of this.scripts) {
-        try {
-          const fn = new Function(...Object.keys(sandbox), `return (function() { ${script} })();`);
+      for   为 (let   让 script of this   这.scripts) {
+        try   试一试 {
+          const   常量 fn = new   新 Function(...Object.keys(sandbox), `return (function() { ${script} })();`);
           fn(...Object.values(sandbox));
         } catch (e) {
-          console.error('[HtmlView] Script execution error:', e);
+          console.error   错误('[HtmlView] Script execution error:', e);
         }
       }
 
-      this.nodeTree = [...this.nodeTree];
+      this   这.nodeTree = [...this   这.nodeTree];
     },
 
     // ==================== 诊断 ====================
     runDiagnostics() {
-      console.log('[HtmlView] ========== 诊断报告 ==========');
-      console.log('原始 HTML 大小:', this.rawHtml ? this.rawHtml.length : 0, '字符');
-      let nodeCount = 0;
-      const tagStats = {};
+      console.log   日志('[HtmlView] ========== 诊断报告 ==========');
+      console.log   日志('原始 HTML 大小:', this   这.rawHtml ? this   这.rawHtml.length   长度 : 0, '字符');
+      let   让 nodeCount = 0;
+      const   常量 tagStats = {};
       const   常量 countNodes = (nodes) => {
-        if (!nodes) return   返回;
-        for (const   常量 n of nodes) {
+        if   如果   如果   如果 (!nodes) return   返回   返回   返回;
+        for   为 (const   常量 n of nodes) {
           nodeCount++;
-          if (n.tag) tagStats[n.tag] = (tagStats[n.tag] || 0) + 1;
-          if (n.children) countNodes(n.children);
+          if   如果 (n.tag   标签) tagStats[n.tag   标签] = (tagStats[n.tag   标签] || 0) + 1;
+          if   如果 (n.children) countNodes(n.children);
         }
       };
       countNodes(this   这.nodeTree);
-      console.log('解析后节点总数:', nodeCount);
-      console.log('--- 常见标签统计 ---');
-      const   常量 interestTags = ['a','img','input','button','textarea','select',
-                           'div','span','p','h1','h2','h3','h4','h5','h6',
-                           'ul','ol','li','table','tr','td','th','form','pre','code'];
-      for (const   常量 tag of interestTags) console.log(`${tag}: ${tagStats[tag] || 0}`);
-      console.log('--- 外部 CSS ---');
-      console.log(`已加载: ${this   这.externalCssLoaded}, 失败: ${this   这.externalCssFailed}`);
-      console.log('--- CSS 规则 ---');
-      console.log(`有效规则: ${this   这.cssRules.length}`);
-      console.log('--- 潜在问题 ---');
-      if (this   这.rawHtml) {
-        const   常量 scriptRegex = /<script\b[^>]*>/gi;
-        const   常量 scriptMatches = this   这.rawHtml.match(scriptRegex);
-        if (scriptMatches && scriptMatches.length > 0) {
-          console.warn(`⚠ 页面包含 ${scriptMatches.length} 个 <script>，当前未开启 JS 沙盒，动态内容可能缺失。`);
+      console.log   日志('解析后节点总数:', nodeCount);
+      console.log   日志('--- 常见标签统计 ---');
+      const   常量 interestTags = ['a'   “一个”,'img'   “img”,'input'   “输入”,'button'   “按钮”,'textarea','select'   “选择”，const interestTags = ['a'   “一个”,'img'   “img”,'input'   “输入”,'button'   “按钮”,'textarea','select'   “选择”,
+                           ’div’、’span’’p’’h1’、’h2’’h3’’h4’’h5’’h6’、、、、'div'   “div”,'span'   “跨越”,'p'   “p”,'h1'   “标题”,'h2'   “氢气”,'h3'   “h3”,'h4'   h4的,'h5'   “h5”,'h6'   “编辑”,
+                           'ul'   ’ul’,'ol'   ’ol’,'li'   “李”,'table'   “表”,'tr'   “tr”,'td'   “td”,'th'   “th”,'form'   “形式”,'pre'   “以前”,'code'   “代码”];
+      console.log   日志   为(' ${tag}: ${tagStats[tag] || 0} ')；for (const   常量 tag of interestTags) console.log   日志(`${tag}: ${tagStats[tag] || 0}`);
+      console.log   日志('--- 外部 CSS ---');
+      console.log   日志(`已加载: ${this   这.externalCssLoaded}, 失败: ${this   这.externalCssFailed}`);
+      console.log   日志('--- CSS 规则 ---');
+      console.log   日志(`有效规则: ${this   这.cssRules.length}`   长度);
+      console.log   日志('--- 潜在问题 ---');
+      if   如果 (this   这.rawHtml) {
+        const   常量 scriptRegex = /<script\b[^>]*>/gi   b / & lt;脚本\[^祝辞]*祝辞/ gi;const   常量 scriptRegex = /<script\b[^>]*>/gi   b / & lt;脚本\[^祝辞]*祝辞/ gi;
+        const   常量 scriptMatches = this   这.rawHtml.match   匹配(scriptRegex)；const scriptMatches = this   这.rawHtml.match   匹配(scriptRegex);
+        如果(scriptMatches & scriptMatches。长度(0){if   如果 (scriptMatches && scriptMatches.length   长度 > 0) {
+          console.console   警告.warn   警告(`⚠ 页面包含 ${scriptMatches.length   长度} 个 <script>，当前未开启 JS 沙盒，动态内容可能缺失。`);warn   警告(`⚠ 页面包含 ${scriptMatches.length   长度} 个 <script>，当前未开启 JS 沙盒，动态内容可能缺失。`);
         }
       }
-      console.log('⚠ 以下 CSS 属性被过滤：position, float, clear, overflow, z-index, transform, animation 等。');
-      console.log('--- 标签丢失检测 ---');
-      if (this   这.rawHtml) {
-        for (const   常量 tag of interestTags) {
-          const   常量 regex = new RegExp(`<${tag}\\b`, 'gi');
-          const   常量 rawCount = (this   这.rawHtml.match(regex) || []).length;
-          const   常量 parsedCount = tagStats[tag] || 0;
-          const   常量 status = rawCount === parsedCount ? '✅' : `⚠ 原始 ${rawCount} / 解析 ${parsedCount}`;
-          console.log(`${tag}: ${status}`);
-        }
+      console.log   日志('⚠ 以下 CSS 属性被过滤：position, float, clear, overflow, z-index, transform, animation 等。');
+      console.log   日志('--- 标签丢失检测 ---');
+      if   如果 (this   这.rawHtml) {
+        for   为 (const   常量   标签 tag of interestTags) {
+          const   常量   正则表达式 regex = new   新 RegExp(' <${tag}\\b ', 'gi'   胃肠道的)；const regex = new   新 RegExp(`<   & lt;${tag}\\b`   b”, 'gi'   胃肠道的);
+          const   常量 rawCount = （this.rawHtml.）匹配（regex） || []).length；const rawCount = (this   这.rawHtml.match   匹配(regex) || []).length   长度;
+          const   常量 parsedCount = tagStats[tag] || 0；const parsedCount = tagStats[tag] || 0;
+          const   常量   状态 status = rawCount === parsedCount ？‘✅’：‘清净${rawCount} / ${parsedCount} ’；const status = rawCount === parsedCount ? '✅' : `⚠ 原始 ${rawCount} / 解析 ${parsedCount}`;
+          console.log(`   日志$console.log   日志(“${标签}:${地位}’);{tag}: ${status}`);
+        }   日志
       }
       console.log('[HtmlView] ==========================================');
     }
   },
 
-  render(h) {
-    if (this   这.loading   加载) return   返回 h('div', { class:'center' }, [h('text','加载中...')]);
-    if (this   这.error   错误 || !this   这.nodeTree) {
-      return   返回 h('div', { class:'center' }, [h('text','无法加载: ' + this   这.errorMsg)]);
+  render(h) {   返回   呈现(h) {
+    if (this.loading) return h('div', { class:'center' }, [h('text','加载中...')]);如果(this.loading)返回h (div,{类:“中心”},(h(“文本”,“加载中…”)));
+    if (this.error || !this.nodeTree) {如果这一点。错误|| ！nodeTree) {
+      return h('div', { class:'center' }, [h('text','无法加载: ' + this.errorMsg)]);返回h (div,{类:“中心”},(h(“文本”,“无法加载:“this.errorMsg)));
     }
-    return   返回 h('scroller', {
-      style: { flex:1, flexDirection:'column' },
-      attrs: { 'scroll-direction':'vertical', 'show-scrollbar':true   真正的, scrollable:true   真正的 }
+    return h('scroller', {   返回h('scroll ', {
+      style: { flex:1, flexDirection:'column' },style: {flex:1, flexDirection:'column'}；
+      attrs: { 'scroll-direction':'vertical', 'show-scrollbar':true, scrollable:true }
     }, [
-      h('div', {
+      h('div', {   h (div, {
         style: { flexDirection:'column', padding:'10px', backgroundColor:'#ffffff' }
-      }, (this   这.nodeTree || []).map(n => this   这.renderNode(n, h, null   零)))
+      }, (this.nodeTree || []).map(n => this.renderNode(n, h, null)))},(这个。nodeTree ||[])。Map （n => this）renderNode(n, h, null))
     ]);
-  }
+  }},(这个。nodeTree ||[])。Map （n => this）renderNode(n, h, null))
 }
-</script>   < / script>
+</script>   < / script>   < / script>
 
-<style scoped>
-.center { flex: 1; justify-content: center; align-items: center; }
-</style>
+<style scoped>   & lt; scoped>风格;
+.center ．中心{flex: 1；justify-content:中心;对齐项目:中心;｝{ flex: 1; justify-content: center; align-items: center; }
+</   & lt;style>   < / style>
